@@ -1,0 +1,62 @@
+######1 MALENAMES
+Juhani
+Olavi
+Antero
+Tapani
+Johannes
+######2 FEMALENAMES
+Maria
+Helena
+Anneli
+Johanna
+Kaarina
+Hannele
+######3 MISC
+auto
+ajo
+audi
+ampuja
+apina
+bat
+######4 COMMON ADDS
+123
+1234
+12345
+123456
+321
+4321
+1
+2
+3
+4
+5
+6
+7
+8
+9
+0
+######5 MARKS
+!
+!!
+-
+--
+_
+.
+#
+######6 MALE ADDS
+mies
+man
+boy
+poika
+veli
+######7 FEMALE ADDS
+tyttö
+girl
+nainen
+woman
+sisko
+######8 PROFANITY
+perkele
+saatana
+kakka
+paska
