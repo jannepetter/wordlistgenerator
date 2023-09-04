@@ -1,7 +1,8 @@
 package main
 
-import "wordlistgenerator/cmd"
+import "wlg/cmd"
 
 func main() {
 	cmd.Execute()
+
 }

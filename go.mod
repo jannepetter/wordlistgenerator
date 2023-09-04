@@ -1,4 +1,4 @@
-module wordlistgenerator
+module wlg
 
 go 1.19
 

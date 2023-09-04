@@ -1,9 +1,8 @@
 package cmd
 
 import (
-	"fmt"
 	"strings"
-	"wordlistgenerator/fun"
+	"wlg/fun"
 
 	"github.com/spf13/cobra"
 )
@@ -17,8 +16,6 @@ var addCmd = &cobra.Command{
 		basewords := fun.ReadFile("base/" + baseFile)
 		var categories = fun.GetCategories(&basewords)
 
-		fmt.Println("flags :", names, dates, misc, outPutfile)
-
 		var wordsToAdd = make([]string, 0)
 		// check if user provided their list of words
 		if userInputList != "" {
@@ -29,9 +26,10 @@ var addCmd = &cobra.Command{
 			wordsToAdd = append(wordsToAdd, strings.Split(userInput, " ")...)
 		}
 
-		if names {
-			wordsToAdd = append(wordsToAdd, categories["femaleNames"]...)
-			wordsToAdd = append(wordsToAdd, categories["maleNames"]...)
+		if names > 0 {
+			maleNames := categories["maleNames"]
+			femaleNames := categories["femaleNames"]
+			wordsToAdd = append(wordsToAdd, *fun.AppendNames(&maleNames, &femaleNames, names)...)
 		}
 		if misc {
 			wordsToAdd = append(wordsToAdd, categories["misc"]...)
@@ -45,7 +43,7 @@ var addCmd = &cobra.Command{
 		}
 
 		if birthdayYear != "" {
-			wordsToAdd = append(wordsToAdd, fun.GetBirthYearList(birthdayYear)...)
+			wordsToAdd = append(wordsToAdd, *fun.GetBirthYearList(birthdayYear)...)
 		}
 		if profanity {
 			wordsToAdd = append(wordsToAdd, categories["profanity"]...)
@@ -62,13 +60,18 @@ var addCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(addCmd)
-	addCmd.PersistentFlags().BoolVarP(&names, "names", "n", false, "Use the default names for selected language")
+	addCmd.PersistentFlags().IntVarP(&names, "names", "n", 0, "Use the default names for selected language\n"+
+		"1 - All names\n"+
+		"2 - Male names\n"+
+		"3 - Female names\n"+
+		"4 - All names lower\n"+
+		"5 - Male names lower\n"+
+		"6 - Female names lower\n")
 	addCmd.PersistentFlags().IntVarP(&adds, "adds", "A", 0, "Endings that will be added to your choice of words and then added to the ouputfile:\n"+
 		"1 - Common adds\n"+
 		"2 - Popular markings\n"+
 		"3 - Male adds\n"+
-		"4 - Female adds\n"+
-		"If you choose only the addings, the addings only will be added to the output list")
+		"4 - Female adds\n")
 	addCmd.PersistentFlags().StringVarP(&outPutfile, "output", "o", "output.txt", "The address where you want your file to be created")
 	addCmd.PersistentFlags().BoolVarP(&misc, "misc", "m", false, "Use miscellaneous words from the language base list")
 	addCmd.PersistentFlags().BoolVarP(&profanity, "profanity", "p", false, "Use profanity")
@@ -77,7 +80,7 @@ func init() {
 		"You can change the format which the dates are presented e.g \"1990 40 . ymd\" will create the dates as 1990.1.1")
 	addCmd.PersistentFlags().StringVarP(&userInput, "list", "l", "", "E.g wordlistgenerator base -l \"one two three\" ")
 	addCmd.PersistentFlags().StringVarP(&userInputList, "List", "L", "", "Address to file of words, if you want to use your own words")
-	addCmd.PersistentFlags().IntVarP(&count, "count", "c", 0, "Add count at the end of your words.")
+	addCmd.PersistentFlags().IntVarP(&count, "count", "c", 0, "Add count at the end of the words in your output list.")
 	addCmd.PersistentFlags().StringVarP(&birthdayYear, "year", "y", "", "Use e.g -y \"1990 50\" to get year presentations from 1990 to 2040")
 	addCmd.PersistentFlags().StringVarP(&lang, "lang", "", "fi", "Language")
 }
