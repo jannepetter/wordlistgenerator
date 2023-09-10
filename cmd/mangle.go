@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-	"time"
 	"wlg/fun"
 
 	"github.com/spf13/cobra"
@@ -12,21 +10,18 @@ var mangleCmd = &cobra.Command{
 	Use:   "mangle",
 	Short: "Mangle your wordlist",
 	Long: `Provide your wordlist that you want to be mangled and select a mangling strategy.
-	E.g wlg mangle -L "mylist.txt" -s 0 -o "myoutputfile.txt`,
+	E.g wlg mangle -L "mylist.txt" -s 1 -o "myoutputfile.txt`,
 	Run: func(cmd *cobra.Command, args []string) {
+		fun.InitFile(tempFileAddress)
+		outputfileExists := fun.FileExists(outPutfile)
+		if !outputfileExists {
+			fun.InitFile(outPutfile)
+		}
 		if strategy < 100 {
-			err := fun.ReadFileForMangle(userInputList, lang, outPutfile, strategy)
+			err := fun.ReadFileForMangle(userInputList, outPutfile, tempFileAddress, lang, strategy, adds)
 			fun.Check(err)
 		}
-		startTime := time.Now()
-		for i := 0; i < 1000000; i++ {
-			fun.ReverseWord("jåöpäs;10uiui--", true)
-			// fmt.Println(word)
-		}
-		endTime := time.Now()
-		elapsedTime := endTime.Sub(startTime)
-
-		fmt.Printf("Elapsed time: %s\n", elapsedTime)
+		fun.RenameTempFile(tempFileAddress, outPutfile)
 
 	},
 }

@@ -2904,11 +2904,11 @@ $
 /
 &
 ;
-######6 MALE ADDS
+######6 ADDS GATEGORY_1
 man
 boy
 brother
-######7 FEMALE ADDS
+######7 ADDS GATEGORY_2
 girl
 woman
 sister

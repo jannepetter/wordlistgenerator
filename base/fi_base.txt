@@ -2641,13 +2641,13 @@ $
 /
 &
 ;
-######6 MALE ADDS
+######6 ADDS CATEGORY_1
 mies
 man
 boy
 poika
 veli
-######7 FEMALE ADDS
+######7 ADDS CATEGORY_2
 tyttö
 girl
 nainen

@@ -12,6 +12,11 @@ var addCmd = &cobra.Command{
 	Short: "Adds the words at the end of each word in your outputfile. Default file is output.txt.",
 	Long:  `You can use this to build your wordlist from ground up.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		fun.InitFile(tempFileAddress)
+		outputfileExists := fun.FileExists(outPutfile)
+		if !outputfileExists {
+			fun.InitFile(outPutfile)
+		}
 		baseFile := lang + "_base.txt"
 		basewords := fun.ReadFile("base/" + baseFile)
 		var categories = fun.GetCategories(&basewords)
@@ -19,7 +24,8 @@ var addCmd = &cobra.Command{
 		var wordsToAdd = make([]string, 0)
 		// check if user provided their list of words
 		if userInputList != "" {
-			wordsToAdd = append(wordsToAdd, fun.ReadFile(userInputList)...)
+			mangleLvl := 102
+			fun.ReadFileForMangle(userInputList, outPutfile, tempFileAddress, lang, mangleLvl, 0)
 		}
 
 		if userInput != "" {
@@ -36,7 +42,7 @@ var addCmd = &cobra.Command{
 		}
 
 		if dates != "" {
-			wordsToAdd = append(wordsToAdd, fun.GetDates(dates)...)
+			wordsToAdd = append(wordsToAdd, *fun.GetDates(dates)...)
 		}
 		if count > 0 {
 			wordsToAdd = append(wordsToAdd, fun.CreateCountList(count)...)
@@ -49,12 +55,13 @@ var addCmd = &cobra.Command{
 			wordsToAdd = append(wordsToAdd, categories["profanity"]...)
 		}
 		if adds > 0 {
-			wordsToAdd = fun.AddAddings(&wordsToAdd, &categories, adds)
+			wordsToAdd = *fun.AddAddings(&wordsToAdd, &categories, adds)
 		}
 
 		if len(wordsToAdd) > 0 {
-			fun.AddWordsToOutputFile(&wordsToAdd, outPutfile)
+			fun.AddWordsToOutputFile(&wordsToAdd, tempFileAddress, outPutfile)
 		}
+		fun.RenameTempFile(tempFileAddress, outPutfile)
 	},
 }
 
@@ -70,8 +77,8 @@ func init() {
 	addCmd.PersistentFlags().IntVarP(&adds, "adds", "A", 0, "Endings that will be added to your choice of words and then added to the ouputfile:\n"+
 		"1 - Common adds\n"+
 		"2 - Popular markings\n"+
-		"3 - Male adds\n"+
-		"4 - Female adds\n")
+		"3 - Category 1 adds\n"+
+		"4 - Category 2 adds\n")
 	addCmd.PersistentFlags().StringVarP(&outPutfile, "output", "o", "output.txt", "The address where you want your file to be created")
 	addCmd.PersistentFlags().BoolVarP(&misc, "misc", "m", false, "Use miscellaneous words from the language base list")
 	addCmd.PersistentFlags().BoolVarP(&profanity, "profanity", "p", false, "Use profanity")

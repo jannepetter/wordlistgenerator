@@ -19,12 +19,12 @@ var (
 	userInputList string
 	count         int
 	birthdayYear  string
-	leetSpeak     bool
 	strategy      int
 )
 
 // go run wordlistgenerator create -h
 // rootCmd represents the base command when called without any subcommands
+var tempFileAddress = "temporary_add_file.txt"
 
 func GetVariables() map[string]interface{} {
 	flags := make(map[string]interface{})

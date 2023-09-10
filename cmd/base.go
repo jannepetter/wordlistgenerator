@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"strings"
 	"wlg/fun"
 
@@ -12,27 +13,25 @@ var baseCmd = &cobra.Command{
 	Short: "Adds the words to your wordlist. Default file is output.txt.",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
+		outputfileExists := fun.FileExists(outPutfile)
+		if !outputfileExists {
+			fun.InitFile(outPutfile)
+		}
+		//check if user provided their list of words, add the adds if user selected adds
+		if userInputList != "" {
+			mangleLvl := 101
+			fun.ReadFileForMangle(userInputList, outPutfile, tempFileAddress, lang, mangleLvl, adds)
+		}
+
 		baseFile := lang + "_base.txt"
 		basewords := fun.ReadFile("base/" + baseFile)
-
+		fmt.Println(baseFile, lang)
 		var categories = fun.GetCategories(&basewords)
 
 		var wordsToSave = make([]string, 0)
 
-		// check if user provided their list of words
-		if userInputList != "" {
-			wordsToSave = append(wordsToSave, fun.ReadFile(userInputList)...)
-		}
-
 		if userInput != "" {
 			wordsToSave = append(wordsToSave, strings.Split(userInput, " ")...)
-		}
-
-		// save in case the user input list is large.
-		if adds > 0 && len(wordsToSave) > 0 {
-			wordsToSave = fun.AddAddings(&wordsToSave, &categories, adds)
-			fun.SaveList(outPutfile, &wordsToSave)
-			wordsToSave = wordsToSave[:0]
 		}
 
 		if names > 0 {
@@ -44,7 +43,7 @@ var baseCmd = &cobra.Command{
 			wordsToSave = append(wordsToSave, categories["misc"]...)
 		}
 		if dates != "" {
-			wordsToSave = append(wordsToSave, fun.GetDates(dates)...)
+			wordsToSave = append(wordsToSave, *fun.GetDates(dates)...)
 		}
 		if count > 0 {
 			wordsToSave = append(wordsToSave, fun.CreateCountList(count)...)
@@ -56,7 +55,7 @@ var baseCmd = &cobra.Command{
 			wordsToSave = append(wordsToSave, categories["profanity"]...)
 		}
 		if adds > 0 {
-			wordsToSave = fun.AddAddings(&wordsToSave, &categories, adds)
+			wordsToSave = *fun.AddAddings(&wordsToSave, &categories, adds)
 		}
 		if patterns {
 			wordsToSave = append(wordsToSave, categories["patterns"]...)
@@ -79,8 +78,8 @@ func init() {
 	baseCmd.PersistentFlags().IntVarP(&adds, "adds", "A", 0, "Endings that will be added to your choice of words:\n"+
 		"1 - Common adds\n"+
 		"2 - Popular markings\n"+
-		"3 - Male adds\n"+
-		"4 - Female adds\n")
+		"3 - Category 1 adds\n"+
+		"4 - Category 2 adds\n")
 	baseCmd.PersistentFlags().StringVarP(&outPutfile, "output", "o", "output.txt", "The address where you want your file to be created")
 	baseCmd.PersistentFlags().BoolVarP(&misc, "misc", "m", false, "Use miscellaneous words from the language base list")
 	baseCmd.PersistentFlags().BoolVarP(&profanity, "profanity", "p", false, "Use profanity")

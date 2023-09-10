@@ -14,10 +14,6 @@ import (
 var CHUNKSIZE int = 100000
 var SAVESIZE int = 1000000
 
-// var linesWrittenInFile int
-// var expectedLines int
-// var linesWrittenMutex sync.Mutex
-
 func Check(err error) {
 	if err != nil {
 		panic(err)
@@ -55,21 +51,6 @@ func SaveList(address string, wordlist *[]string) {
 	}
 }
 
-// func writeFile(wordlist []string, writer *bufio.Writer) {
-
-// 	for i := 0; i < len(wordlist); i++ {
-// 		_, err := writer.WriteString(wordlist[i] + "\n")
-// 		Check(err)
-// 	}
-// 	writer.Flush()
-
-// 	// if progress bar needed. Maybe dont need if only one thread writing in??
-// 	// linesWrittenMutex.Lock()
-// 	// linesWrittenInFile += len(wordlist)
-// 	// linesWrittenMutex.Unlock()
-// }
-
-// onko tämä nopeampi?? tarkista
 func writeFile(wordlist []string, writer *bufio.Writer) {
 
 	for i := 0; i < len(wordlist); i++ {
@@ -90,15 +71,15 @@ func getGategoryMode(word string) int {
 func GetCategories(basewords *[]string) map[string][]string {
 
 	var categories = map[string][]string{
-		"maleNames":   make([]string, 0),
-		"femaleNames": make([]string, 0),
-		"misc":        make([]string, 0),
-		"marks":       make([]string, 0),
-		"maleAdds":    make([]string, 0),
-		"femaleAdds":  make([]string, 0),
-		"profanity":   make([]string, 0),
-		"commonAdds":  make([]string, 0),
-		"patterns":    make([]string, 0),
+		"maleNames":      make([]string, 0),
+		"femaleNames":    make([]string, 0),
+		"misc":           make([]string, 0),
+		"marks":          make([]string, 0),
+		"adds_category1": make([]string, 0),
+		"adds_category2": make([]string, 0),
+		"profanity":      make([]string, 0),
+		"commonAdds":     make([]string, 0),
+		"patterns":       make([]string, 0),
 	}
 
 	categoryMode := 0
@@ -122,9 +103,9 @@ func GetCategories(basewords *[]string) map[string][]string {
 		case 5:
 			categories["marks"] = append(categories["marks"], word)
 		case 6:
-			categories["maleAdds"] = append(categories["maleAdds"], word)
+			categories["adds_category1"] = append(categories["adds_category1"], word)
 		case 7:
-			categories["femaleAdds"] = append(categories["femaleAdds"], word)
+			categories["adds_category2"] = append(categories["adds_category2"], word)
 		case 8:
 			categories["profanity"] = append(categories["profanity"], word)
 		case 9:
@@ -178,7 +159,7 @@ func modDates(day string, month string, year string, charlist []string, format s
 	}
 	return datelist
 }
-func GetDates(dateString string) []string {
+func GetDates(dateString string) *[]string {
 	values := strings.Split(dateString, " ")
 	startingYear, err := strconv.Atoi(values[0])
 	Check(err)
@@ -231,24 +212,16 @@ func GetDates(dateString string) []string {
 		}
 	}
 
-	return datelist
+	return &datelist
 }
 
 // add the words after each word on the output file
-func AddWordsToOutputFile(wordlist *[]string, address string) {
-	inputFile := address
-	tempFile := "temporary_add_file.txt"
-	// Open the input file for reading
-	file, err := os.Open(address)
+func AddWordsToOutputFile(wordlist *[]string, address string, outputfile string) {
+
+	file, err := os.Open(outputfile)
 	Check(err)
 
 	defer file.Close()
-
-	// Create a temporary output file for writing
-	tempOutputFile, err := os.Create(tempFile)
-	Check(err)
-
-	defer tempOutputFile.Close()
 
 	// Create a scanner to read the input file line by line
 	scanner := bufio.NewScanner(file)
@@ -256,14 +229,14 @@ func AddWordsToOutputFile(wordlist *[]string, address string) {
 	// Check if output file is empty -> just save the wordlist
 	var wordCollector []string
 	if !scanner.Scan() {
-		SaveList(tempFile, wordlist)
+		SaveList(address, wordlist)
 	} else {
 		firstLine := scanner.Text()
 		for _, word := range *wordlist {
 			newLine := firstLine + word // Modify the line by adding the additional word
 			wordCollector = append(wordCollector, newLine)
 			if len(wordCollector) > SAVESIZE {
-				SaveList(tempFile, &wordCollector)
+				SaveList(address, &wordCollector)
 				wordCollector = wordCollector[:0]
 			}
 		}
@@ -276,13 +249,13 @@ func AddWordsToOutputFile(wordlist *[]string, address string) {
 			newLine := line + word // Modify the line by adding the additional word
 			wordCollector = append(wordCollector, newLine)
 			if len(wordCollector) > SAVESIZE {
-				SaveList(tempFile, &wordCollector)
+				SaveList(address, &wordCollector)
 				wordCollector = wordCollector[:0]
 			}
 		}
 	}
 	if len(wordCollector) > 0 {
-		SaveList(tempFile, &wordCollector)
+		SaveList(address, &wordCollector)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -292,11 +265,7 @@ func AddWordsToOutputFile(wordlist *[]string, address string) {
 
 	// Close the input and temporary output files
 	file.Close()
-	tempOutputFile.Close()
 
-	// Replace the input file with the temporary output file
-	err = os.Rename(tempFile, inputFile)
-	Check(err)
 	fmt.Println("Words added to each line successfully!")
 }
 
@@ -354,41 +323,66 @@ func SaveAsLeetSpeak(replacements map[string][]string, words *[]string, address 
 	}
 }
 
-func ReadFileForMangle(address string, lang string, outputfile string, mangle int) error {
-	if address == outputfile {
-		return errors.New("your file cannot be the same as outputfile")
+func ReadFileForMangle(address string, outputFile string, tempOutputFile string, lang string, mangleLvl int, addLvl int) error {
+	if address == "" {
+		return errors.New("you need to define which list you want to be mangled with -L \"yourlist.txt\"")
 	}
-	fileAddress, err := os.Open(address)
+	fileHandle, err := os.Open(address)
 	Check(err)
-	fileScanner := bufio.NewScanner(fileAddress)
+	fileScanner := bufio.NewScanner(fileHandle)
 	fileScanner.Split(bufio.ScanLines)
 	var fileLines []string
 
 	for fileScanner.Scan() {
 		fileLines = append(fileLines, fileScanner.Text())
 		if len(fileLines) > SAVESIZE {
-			mangleAndSave(&fileLines, outputfile, lang, mangle)
+			mangleAndSave(&fileLines, address, outputFile, tempOutputFile, lang, mangleLvl, addLvl)
 			fileLines = fileLines[:0]
 		}
 	}
+	fileHandle.Close()
 	// save the rest
-	mangleAndSave(&fileLines, outputfile, lang, mangle)
-
-	fileAddress.Close()
+	mangleAndSave(&fileLines, address, outputFile, tempOutputFile, lang, mangleLvl, addLvl)
 
 	return nil
 }
 
-func mangleAndSave(fileLines *[]string, outputfile string, lang string, strategy int) {
+func mangleAndSave(fileLines *[]string, address string, outputfile string, tempOutputFile string, lang string, strategy int, addLvl int) {
 
 	switch strategy {
 	case 1:
-		SaveList(outputfile, UpperAndLowerCaseList(fileLines))
+		SaveList(tempOutputFile, UpperAndLowerCaseList(fileLines))
 	case 2:
-		SaveList(outputfile, LightMangle(fileLines, outputfile))
+		SaveList(tempOutputFile, LightMangle(fileLines, outputfile))
 	case 3:
 		replacements := GetLeetSpeakReplacements(lang)
-		SaveAsLeetSpeak(replacements, fileLines, outputfile)
+		SaveAsLeetSpeak(replacements, fileLines, tempOutputFile)
+	// cases above 100 are helpers to cope if user provided list is too big to be done in memory
+	case 101:
+		baseFile := lang + "_base.txt"
+		basewords := ReadFile("base/" + baseFile)
+		var categories = GetCategories(&basewords)
+		fileLines = AddAddings(fileLines, &categories, addLvl)
+		SaveList(outputfile, fileLines)
+	case 102:
+		// add command, read and add to outputfile
+		fileHandle, err := os.Open(outputfile)
+		Check(err)
+		fileScanner := bufio.NewScanner(fileHandle)
+		fileScanner.Split(bufio.ScanLines)
+		var newFileLines []string
+		linesExist := false
+		for fileScanner.Scan() {
+			newFileLines = append(newFileLines, fileScanner.Text())
+			newFileLines = *AppendWords(&newFileLines, fileLines)
+			linesExist = true
+			SaveList(tempOutputFile, &newFileLines)
+			newFileLines = newFileLines[:0]
+		}
+		fileHandle.Close()
+		if !linesExist {
+			SaveList(tempOutputFile, fileLines)
+		}
 	}
 
 }
@@ -472,7 +466,7 @@ func GetLeetSpeakReplacements(lang string) map[string][]string {
 	return finnish_replacements
 }
 
-func AddAddings(words *[]string, categories *map[string][]string, adds int) []string {
+func AddAddings(words *[]string, categories *map[string][]string, adds int) *[]string {
 	var wordlist []string
 	categoryMap := *categories
 	var addingList []string
@@ -482,9 +476,9 @@ func AddAddings(words *[]string, categories *map[string][]string, adds int) []st
 	case 2:
 		addingList = categoryMap["marks"]
 	case 3:
-		addingList = categoryMap["maleAdds"]
+		addingList = categoryMap["adds_category1"]
 	case 4:
-		addingList = categoryMap["femaleAdds"]
+		addingList = categoryMap["adds_category2"]
 	}
 
 	if len(*words) > 0 && len(addingList) > 0 {
@@ -497,9 +491,11 @@ func AddAddings(words *[]string, categories *map[string][]string, adds int) []st
 	}
 
 	if len(wordlist) > 0 {
-		return wordlist
+		return &wordlist
+	} else if len(*words) > 0 {
+		return words
 	} else {
-		return *words
+		return &addingList
 	}
 }
 
@@ -593,22 +589,23 @@ func Combinator(categories *map[string][]string, choice int) *[]string {
 		profanity := (*categories)["profanity"]
 		wordlist = *UpperAndLowerCaseList(&profanity)
 	case 6:
-		// malenames with male adds
+		// malenames with category1 adds
 		wordlist = *Combinator(categories, 1)
-		adds := (*categories)["maleAdds"]
+		adds := (*categories)["adds_category1"]
 		wordlist = *AppendWords(&wordlist, &adds)
 	case 7:
-		// femalenames with female adds
+		// femalenames with category2 adds
 		wordlist = *Combinator(categories, 2)
-		adds := (*categories)["femaleAdds"]
+		adds := (*categories)["adds_category2"]
 		wordlist = *AppendWords(&wordlist, &adds)
 	case 8:
-		// male and female names with gender adds
+		// malenames with category1 adds
+		// femalenames with category2 adds
 		wordlist = *Combinator(categories, 6)
 		wordlist = append(wordlist, *Combinator(categories, 7)...)
 	case 9:
-		adds := (*categories)["maleAdds"]
-		wordlist = append(adds, (*categories)["femaleAdds"]...)
+		adds := (*categories)["adds_category1"]
+		wordlist = append(adds, (*categories)["adds_category2"]...)
 	case 10:
 		marks := (*categories)["marks"]
 		commonAdds := (*categories)["commonAdds"]
@@ -640,9 +637,9 @@ func UseStrategy(categories *map[string][]string, strategy int, address string, 
 
 	switch strategy {
 	case 0:
-		dates := GetDates(dateString)
+		dates := *GetDates(dateString)
 		dateMod := dateString + " ./"
-		dates = append(dates, GetDates(dateMod)...)
+		dates = append(dates, *GetDates(dateMod)...)
 		words = append(dates, (*categories)["patterns"]...)
 		SaveList(address, &words)
 	case 1:
@@ -681,9 +678,9 @@ func UseStrategy(categories *map[string][]string, strategy int, address string, 
 		SaveList(address, &words)
 	case 5:
 		misc := Combinator(categories, 4)
-		genderAdds := Combinator(categories, 9)
-		withGenderAdds := AppendWords(misc, genderAdds)
-		SaveList(address, withGenderAdds)
+		category1and2Adds := Combinator(categories, 9)
+		miscWithAdds := AppendWords(misc, category1and2Adds)
+		SaveList(address, miscWithAdds)
 
 		yearList := GetBirthYearList(dateString)
 		withYears := AppendWords(misc, yearList)
@@ -696,10 +693,10 @@ func UseStrategy(categories *map[string][]string, strategy int, address string, 
 		miscWithYearAdds := AppendWords(misc, yearsWithMarks)
 		SaveList(address, miscWithYearAdds)
 
-		genderAdds := Combinator(categories, 9)
-		genderWithMarks := AppendWords(genderAdds, &marks)
-		miscWithGenderAdds := AppendWords(misc, genderWithMarks)
-		SaveList(address, miscWithGenderAdds)
+		category1and2Adds := Combinator(categories, 9)
+		addsWithMarks := AppendWords(category1and2Adds, &marks)
+		miscWithAdds := AppendWords(misc, addsWithMarks)
+		SaveList(address, miscWithAdds)
 
 	case 7:
 		profanity := Combinator(categories, 5)
@@ -711,8 +708,8 @@ func UseStrategy(categories *map[string][]string, strategy int, address string, 
 	case 8:
 		profanity := Combinator(categories, 5)
 		yearList := GetBirthYearList(dateString)
-		genderAdds := Combinator(categories, 9)
-		AppendSlices(&words, genderAdds, yearList)
+		category1and2Adds := Combinator(categories, 9)
+		AppendSlices(&words, category1and2Adds, yearList)
 		profanityWithAdds := AppendWords(profanity, &words)
 		SaveList(address, profanityWithAdds)
 	case 9:
@@ -745,10 +742,6 @@ func LightMangle(words *[]string, outputfile string) *[]string {
 		if len(word) <= 4 {
 			newWord := word + word + word
 			wordlist = append(wordlist, newWord)
-		}
-		if len(wordlist) > SAVESIZE {
-			SaveList(outputfile, &wordlist)
-			wordlist = wordlist[:0]
 		}
 	}
 	return &wordlist
@@ -805,4 +798,20 @@ func separateNumbersAndWords(input string) (string, string) {
 	}
 
 	return wordBuilder.String(), remainingBuilder.String()
+}
+
+func InitFile(address string) {
+	tempFile, err := os.Create(address)
+	Check(err)
+	tempFile.Close()
+}
+
+func RenameTempFile(address string, newname string) {
+	err := os.Rename(address, newname)
+	Check(err)
+}
+
+func FileExists(name string) bool {
+	_, err := os.Stat(name)
+	return !os.IsNotExist(err)
 }
