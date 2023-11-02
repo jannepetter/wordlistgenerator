@@ -29,8 +29,8 @@ func init() {
 	quickCmd.PersistentFlags().IntVarP(&strategy, "strategy", "s", 0, "Ready made strategies using language base file.\n\n"+
 		"0 - Dates from the past 50 years in different formats and patterns.\n"+
 		"1 - Names with lower and uppercase, marks, and common addings.\n"+
-		"2 - Names with lower and uppercase with birth year (past 50 years). E.g john08, john2008 + additional addings.\n"+
-		"3 - Names with lower and uppercase with birth years and marks. + additional addings\n"+
+		"2 - Names with lower and uppercase with birth year (past 50 years). E.g john08, john2008 + category 1 & 2 adds.\n"+
+		"3 - Names with lower and uppercase with birth years and marks. + category 1 & 2 adds.\n"+
 		"4 - Miscellaneous words from base language file combined with marks and common addings\n"+
 		"5 - Miscellaneous words from base language file combined with birth year (50 years) + additional addings.\n"+
 		"6 - Miscellaneous words from base language file combined with years, marks and category 1 & 2 adds.\n"+

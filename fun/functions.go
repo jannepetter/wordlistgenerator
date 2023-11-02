@@ -355,8 +355,17 @@ func mangleAndSave(fileLines *[]string, address string, outputfile string, tempO
 	case 2:
 		SaveList(tempOutputFile, LightMangle(fileLines, outputfile))
 	case 3:
+		baseFile := lang + "_base.txt"
+		basewords := ReadFile("base/" + baseFile)
+		var categories = GetCategories(&basewords)
+		combined := AddAddings(fileLines, &categories, 2)
+		SaveList(tempOutputFile, combined)
+		combined = AddAddings(fileLines, &categories, 1)
+		SaveList(tempOutputFile, combined)
+	case 4:
 		replacements := GetLeetSpeakReplacements(lang)
 		SaveAsLeetSpeak(replacements, fileLines, tempOutputFile)
+
 	// cases above 100 are helpers to cope if user provided list is too big to be done in memory
 	case 101:
 		baseFile := lang + "_base.txt"

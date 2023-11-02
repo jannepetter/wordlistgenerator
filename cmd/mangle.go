@@ -35,5 +35,6 @@ func init() {
 		"Yourfile and outputfile need to be different.\n\n"+
 		"1 - Uppercase and lowercase your list.\n"+
 		"2 - Light mangle. Upper and lowercase word, duplicate, reverse, uppercase entire word. Short words are tripled.\n"+
-		"3 - Mangle your wordlist with leetspeak. WARNING! this can get huge very quickly.\n")
+		"3 - Mangle your list with common adds and marks.\n"+
+		"4 - Mangle your wordlist with leetspeak. WARNING! this can get huge very quickly.\n")
 }
